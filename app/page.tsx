@@ -1,103 +1,249 @@
-import Image from "next/image";
+// app/page.tsx
+"use client";
+
+import { useState } from "react";
+import { read, utils } from "xlsx";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  function filterData(data: any[], query: string): any[] {
+    if (!query.trim()) return data;
+    try {
+      const lower = query.toLowerCase();
+      return data.filter(row =>
+        Object.values(row).some(val => String(val).toLowerCase().includes(lower))
+      );
+    } catch {
+      return data;
+    }
+  }
+  const [query, setQuery] = useState('');
+  const [clientsData, setClientsData] = useState<any[]>([]);
+  const [workersData, setWorkersData] = useState<any[]>([]);
+  const [tasksData, setTasksData] = useState<any[]>([]);
+  const [clientsColumns, setClientsColumns] = useState<string[]>([]);
+  const [workersColumns, setWorkersColumns] = useState<string[]>([]);
+  const [tasksColumns, setTasksColumns] = useState<string[]>([]);
+  const [errors, setErrors] = useState<string[]>([]);
+
+  function normalizeHeaders(row: any, entity: 'clients' | 'workers' | 'tasks') {
+  const headerMap: Record<string, string> = {
+    clientid: 'ClientID',
+    clientname: 'ClientName',
+    priority: 'PriorityLevel',
+    taskids: 'RequestedTaskIDs',
+    group: 'GroupTag',
+    attributes: 'AttributesJSON',
+    workerid: 'WorkerID',
+    workername: 'WorkerName',
+    skills: 'Skills',
+    availableslots: 'AvailableSlots',
+    maxloadperphase: 'MaxLoadPerPhase',
+    workergroup: 'WorkerGroup',
+    qualificationlevel: 'QualificationLevel',
+    taskid: 'TaskID',
+    taskname: 'TaskName',
+    category: 'Category',
+    duration: 'Duration',
+    requiredskills: 'RequiredSkills',
+    preferredphases: 'PreferredPhases',
+    maxconcurrent: 'MaxConcurrent',
+  };
+
+  const normalized: any = {};
+  for (const key in row) {
+    const mappedKey = headerMap[key.toLowerCase()] || key;
+    normalized[mappedKey] = row[key];
+  }
+  return normalized;
+}
+
+function handleEntityUpload(e: React.ChangeEvent<HTMLInputElement>, entity: 'clients' | 'workers' | 'tasks') {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const ext = file.name.split(".").pop();
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      const data = e.target?.result;
+      let workbook;
+
+      if (ext === "csv") {
+        workbook = read(data as string, { type: "string" });
+      } else if (ext === "xlsx") {
+        workbook = read(data, { type: "binary" });
+      } else {
+        alert("Unsupported file type.");
+        return;
+      }
+
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      let raw = utils.sheet_to_json(sheet);
+const json = raw.map((row) => normalizeHeaders(row, entity));
+
+      switch (entity) {
+        case 'clients':
+          setClientsData(json);
+          setClientsColumns(Object.keys(json[0] || {}));
+          break;
+        case 'workers':
+          setWorkersData(json);
+          setWorkersColumns(Object.keys(json[0] || {}));
+          break;
+        case 'tasks':
+          setTasksData(json);
+          setTasksColumns(Object.keys(json[0] || {}));
+          break;
+      }
+    };
+
+    if (ext === "csv") reader.readAsText(file);
+    else if (ext === "xlsx") reader.readAsBinaryString(file);
+  }
+
+  function isValidJson(jsonString: string) {
+    try {
+      const parsed = JSON.parse(jsonString);
+      return typeof parsed === 'object';
+    } catch {
+      return false;
+    }
+  }
+
+  function validateClients(data: any[]) {
+    const issues: string[] = [];
+    const seenIDs = new Set();
+
+    for (const [i, row] of data.entries()) {
+      const rowLabel = `Clients Row ${i + 1}`;
+
+      if (!row.ClientID) issues.push(`${rowLabel} is missing ClientID.`);
+      if (row.ClientID && seenIDs.has(row.ClientID)) issues.push(`${rowLabel} has duplicate ClientID '${row.ClientID}'.`);
+      seenIDs.add(row.ClientID);
+
+      if (row.PriorityLevel && (isNaN(row.PriorityLevel) || row.PriorityLevel < 1 || row.PriorityLevel > 5)) {
+        issues.push(`${rowLabel}: PriorityLevel should be between 1 and 5.`);
+      }
+
+      if (row.RequestedTaskIDs && typeof row.RequestedTaskIDs === 'string' && row.RequestedTaskIDs.split(',').some((id: string) => id.trim() === '')) {
+        issues.push(`${rowLabel}: RequestedTaskIDs contains empty values.`);
+      }
+
+      if (row.AttributesJSON && typeof row.AttributesJSON === 'string' && !isValidJson(row.AttributesJSON)) {
+        issues.push(`${rowLabel}: AttributesJSON is not valid JSON.`);
+      }
+    }
+
+    setErrors(issues);
+  }
+
+  function handleEdit(entity: 'clients' | 'workers' | 'tasks', rowIndex: number, column: string, value: string) {
+    const update = (data: any[], setData: any) => {
+      const newData = [...data];
+      newData[rowIndex] = { ...newData[rowIndex], [column]: value };
+      setData(newData);
+    };
+
+    if (entity === 'clients') update(clientsData, setClientsData);
+    if (entity === 'workers') update(workersData, setWorkersData);
+    if (entity === 'tasks') update(tasksData, setTasksData);
+  }
+
+  function renderEditableTable(data: any[], columns: string[], entity: 'clients' | 'workers' | 'tasks') {
+    const filtered = filterData(data, query);
+
+    return (
+      <table className="min-w-full text-sm text-left border mb-2">
+        <thead className="bg-gray-200">
+          <tr>
+            {columns.map((col) => (
+              <th key={col} className="px-2 py-1 border">{col}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((row, rowIndex) => (
+            <tr key={rowIndex} className="odd:bg-white even:bg-gray-100">
+              {columns.map((col) => (
+                <td key={col} className="px-2 py-1 border">
+                  <input
+                    className="w-full p-1 border rounded"
+                    value={row[col] || ''}
+                    onChange={(e) => handleEdit(entity, rowIndex, col, e.target.value)}
+                  />
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  }
+
+  return (
+    <main className="p-4 space-y-8">
+      <h1 className="text-2xl font-bold">📥 Data Alchemist Upload</h1>
+      <input
+        type="text"
+        placeholder="🔎 Search data naturally, e.g. 'priority 5 clients'"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        className="w-full p-2 border rounded shadow mb-4"
+      />
+
+      <section>
+        <h2 className="font-semibold">Upload Clients File</h2>
+        <input type="file" accept=".csv, .xlsx" onChange={(e) => handleEntityUpload(e, 'clients')} />
+      </section>
+
+      <section>
+        <h2 className="font-semibold">Upload Workers File</h2>
+        <input type="file" accept=".csv, .xlsx" onChange={(e) => handleEntityUpload(e, 'workers')} />
+      </section>
+
+      <section>
+        <h2 className="font-semibold">Upload Tasks File</h2>
+        <input type="file" accept=".csv, .xlsx" onChange={(e) => handleEntityUpload(e, 'tasks')} />
+      </section>
+
+      {errors.length > 0 && (
+        <div className="bg-red-100 text-red-800 p-2 rounded">
+          <h2 className="font-bold">Validation Errors</h2>
+          <ul className="list-disc pl-4">
+            {errors.map((err, idx) => (
+              <li key={idx}>{err}</li>
+            ))}
+          </ul>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      )}
+
+      {clientsData.length > 0 && (
+        <div>
+          <h3 className="font-semibold">Clients (Editable)</h3>
+          {renderEditableTable(filterData(clientsData, query), clientsColumns, 'clients')}
+          <button
+            onClick={() => validateClients(clientsData)}
+            className="bg-blue-600 text-white px-4 py-2 rounded"
+          >
+            ✅ Validate Clients
+          </button>
+        </div>
+      )}
+
+      {workersData.length > 0 && (
+        <div>
+          <h3 className="font-semibold">Workers (Editable)</h3>
+          {renderEditableTable(filterData(workersData, query), workersColumns, 'workers')}
+        </div>
+      )}
+
+      {tasksData.length > 0 && (
+        <div>
+          <h3 className="font-semibold">Tasks (Editable)</h3>
+          {renderEditableTable(filterData(tasksData, query), tasksColumns, 'tasks')}
+        </div>
+      )}
+    </main>
   );
 }
