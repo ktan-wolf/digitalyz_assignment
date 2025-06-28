@@ -174,80 +174,30 @@ export default function Home() {
         </div>
       )}
 
-      {errors.length > 0 && (
-        <div className="bg-red-100 text-red-800 p-2 rounded">
-          <h2 className="font-bold">Validation Errors</h2>
-          <ul className="list-disc pl-4">{errors.map((err, idx) => <li key={idx}>{err}</li>)}</ul>
-        </div>
-      )}
-
       {workersData.length > 0 && (
         <div>
-          <h3 className="font-semibold">Clients (Editable)</h3>
+          <h3 className="font-semibold">Workers (Editable)</h3>
           {renderEditableTable(workersData, workersColumns, 'workers')}
           <button onClick={() => validateClients(workersData)} className="bg-blue-600 text-white px-4 py-2 rounded">✅ Validate Workers</button>
         </div>
       )}
 
-      {errors.length > 0 && (
-        <div className="bg-red-100 text-red-800 p-2 rounded">
-          <h2 className="font-bold">Validation Errors</h2>
-          <ul className="list-disc pl-4">{errors.map((err, idx) => <li key={idx}>{err}</li>)}</ul>
-        </div>
-      )}
-
       {tasksData.length > 0 && (
         <div>
-          <h3 className="font-semibold">Clients (Editable)</h3>
+          <h3 className="font-semibold">Tasks (Editable)</h3>
           {renderEditableTable(tasksData, tasksColumns, 'tasks')}
-          <button onClick={() => validateClients(tasksData)} className="bg-blue-600 text-white px-4 py-2 rounded">✅ Validate tasks</button>
+          <button onClick={() => validateClients(tasksData)} className="bg-blue-600 text-white px-4 py-2 rounded">✅ Validate Tasks</button>
         </div>
       )}
 
-      {/* 🚀 Rule Input Section */}
-      {/* <div>
-        <h2 className="text-xl font-bold mt-8">🧠 Rule Builder</h2>
-
-        <div className="space-y-2">
-          <label>⚖️ Co-run Task Weight:
-            <input type="range" min={1} max={10} value={weights.coRun} onChange={(e) => setWeights({ ...weights, coRun: +e.target.value })} className="w-full" />
-          </label>
-
-          <label>📅 Slot Restriction Weight:
-            <input type="range" min={1} max={10} value={weights.slotRestriction} onChange={(e) => setWeights({ ...weights, slotRestriction: +e.target.value })} className="w-full" />
-          </label>
-
-          <label>⏳ Phase Window Weight:
-            <input type="range" min={1} max={10} value={weights.phaseWindow} onChange={(e) => setWeights({ ...weights, phaseWindow: +e.target.value })} className="w-full" />
-          </label>
-        </div>
-
-        <button
-          onClick={() => {
-            const ruleConfig = {
-              coRunWeight: weights.coRun,
-              slotWeight: weights.slotRestriction,
-              phaseWindowWeight: weights.phaseWindow,
-              timestamp: new Date().toISOString(),
-            };
-            setRules([...rules, ruleConfig]);
-          }}
-          className="mt-4 bg-green-600 text-white px-4 py-2 rounded"
-        >
-          ➕ Add Rule
-        </button>
-
-        {rules.length > 0 && (
-          <div className="mt-4">
-            <h3 className="font-semibold">Generated Rules JSON</h3>
-            <pre className="bg-gray-100 p-2 rounded text-xs overflow-auto">
-              {JSON.stringify(rules, null, 2)}
-            </pre>
-          </div>
-        )}
-      </div> */}
-
-      <RuleBuilder clients={clientsData} workers={workersData} tasks={tasksData}/>
+      <RuleBuilder
+        clients={clientsData}
+        workers={workersData}
+        tasks={tasksData}
+        setClientsData={setClientsData}
+        setWorkersData={setWorkersData}
+        setTasksData={setTasksData}
+      />
     </main>
   );
 }
