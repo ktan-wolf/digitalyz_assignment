@@ -1,0 +1,5 @@
+TaskID,TaskName,Category,Duration,RequiredSkills,PreferredPhases,MaxConcurrent
+T1,Appendectomy,Surgery,2,"Surgery","[1,3]",1
+T2,ECG,Diagnostics,1,"Diagnostics","2-3",2
+T3,ICU Rounds,ICU,3,"ICU","[2,4,5]",1
+T4,CT Scan,Diagnostics,1,"Diagnostics","[3,4]",2

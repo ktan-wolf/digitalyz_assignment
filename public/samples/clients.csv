@@ -1,0 +1,4 @@
+ClientID,ClientName,PriorityLevel,RequestedTaskIDs,GroupTag,AttributesJSON
+C1,Acme Inc,3,T1,Tier1,"{""location"": ""NY"", ""budget"": 10000}"
+C2,Globex Corp,5,"T2,T3",Tier2,"{""location"": ""LA"", ""budget"": 15000}"
+C3,Umbrella Co,2,T4,Tier1,"{""location"": ""SF"", ""budget"": 12000}"
