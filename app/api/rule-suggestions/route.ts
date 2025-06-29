@@ -54,7 +54,6 @@ export async function POST(req: Request) {
   }
 }
 
-// Optional: GET handler for basic testing
 export function GET() {
   return NextResponse.json({ message: 'hello there' });
 }

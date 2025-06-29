@@ -1,4 +1,3 @@
-// app/components/Rulebuilder.tsx
 "use client";
 
 import { useState } from "react";

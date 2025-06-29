@@ -24,22 +24,9 @@ import Groq from "groq-sdk";
 //   const fixes = completion.choices?.[0]?.message?.content?.split("\n").filter(Boolean) || [];
 
 //   return NextResponse.json({ fixes });
-// }
+// 
 
 
-// export async function POST() {
-//   return NextResponse.json({
-//     fixes: [
-//       "Fix Worker W1: AvailableSlots contains a string instead of number.",
-//       "Fix Task T2: PreferredPhases uses invalid format.",
-//       "Fix Client C5: AttributesJSON is malformed.",
-//     ],
-//   });
-// }
-
-// --- 📁 app/api/ai-fix-suggestions/route.ts ---
-
-// app/api/ai-fix-suggestions/route.ts
 import OpenAI from "openai"; // Groq-compatible SDK
 
 const groq = new OpenAI({

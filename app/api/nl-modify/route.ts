@@ -1,4 +1,3 @@
-// app/api/nl-modify/route.ts
 import { NextResponse } from "next/server";
 import Groq from "groq-sdk";
 

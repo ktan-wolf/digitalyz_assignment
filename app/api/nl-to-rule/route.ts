@@ -1,4 +1,3 @@
-// --- 📁 app/api/nl-to-rule/route.ts ---
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 
@@ -37,44 +36,10 @@ import OpenAI from "openai";
 //   }
 // }
 
-// export async function POST(req: Request) {
-//     const { text } = await req.json();
-  
-//     // Basic keyword-based mock logic
-//     let rule = null;
-  
-//     if (text.toLowerCase().includes("surgery") && text.toLowerCase().includes("icu")) {
-//       rule = {
-//         type: "co-run",
-//         conditions: { Category: "Surgery" },
-//         notWith: { Category: ["ICU"] },
-//         weight: 50,
-//       };
-//     } else if (text.toLowerCase().includes("sales") && text.toLowerCase().includes("max load")) {
-//       rule = {
-//         type: "load-limit",
-//         WorkerGroup: "Sales",
-//         maxSlotsPerPhase: 2,
-//         weight: 40,
-//       };
-//     } else {
-//       // fallback mock
-//       rule = {
-//         type: "co-run",
-//         conditions: { Tag: "Example" },
-//         notWith: { Tag: ["OtherExample"] },
-//         weight: 50,
-//       };
-//     }
-  
-//     return NextResponse.json({ rule });
-//   }
 
 
-// --- 📁 app/api/nl-to-rule/route.ts ---
 
-// app/api/nl-to-rule/route.ts
-
+//using groq with free quota
 const groq = new OpenAI({
   apiKey: process.env.GROQ_API_KEY!,
   baseURL: "https://api.groq.com/openai/v1",
