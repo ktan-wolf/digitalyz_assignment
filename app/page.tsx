@@ -13,6 +13,9 @@ export default function Home() {
   const [aiFixes, setAiFixes] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loadingFixes, setLoadingFixes] = useState(false);
+  const [clientFileName, setClientFileName] = useState<string | null>(null);
+const [workerFileName, setWorkerFileName] = useState<string | null>(null);
+const [taskFileName, setTaskFileName] = useState<string | null>(null);
 
   function normalizeHeaders(headers: string[]) {
     const map: Record<string, string> = {
@@ -61,21 +64,28 @@ export default function Home() {
     reader.readAsArrayBuffer(file);
   }
 
-  function handleEntityUpload(e: React.ChangeEvent<HTMLInputElement>, setter: (data: any[]) => void) {
+  function handleEntityUpload(
+    e: React.ChangeEvent<HTMLInputElement>,
+    setter: (data: any[]) => void,
+    setFileName: (name: string | null) => void
+  ) {
     const file = e.target.files?.[0];
-    if (file) parseFile(file, setter);
+    if (file) {
+      parseFile(file, setter);
+      setFileName(file.name);
+    }
   }
 
   async function validateAll() {
     const newErrors: string[] = [];
 
-    // Clients
     for (const client of clientsData) {
       for (const key in client) {
         if (client[key] === "") newErrors.push(`Empty cell in clients: ${key}`);
       }
       if (!client.ClientID) newErrors.push("ClientID missing");
-      if (Number(client.PriorityLevel) < 1 || Number(client.PriorityLevel) > 5) newErrors.push(`Invalid PriorityLevel for client ${client.ClientID}`);
+      if (Number(client.PriorityLevel) < 1 || Number(client.PriorityLevel) > 5)
+        newErrors.push(`Invalid PriorityLevel for client ${client.ClientID}`);
       try {
         JSON.parse(client.AttributesJSON);
       } catch {
@@ -83,7 +93,6 @@ export default function Home() {
       }
     }
 
-    // Workers
     const workerIDs = new Set();
     for (const worker of workersData) {
       for (const key in worker) {
@@ -97,10 +106,10 @@ export default function Home() {
       if (!Array.isArray(slots) || slots.some((x) => isNaN(Number(x)))) {
         newErrors.push(`Malformed AvailableSlots for worker ${worker.WorkerID}`);
       }
-      if (isNaN(Number(worker.MaxLoadPerPhase))) newErrors.push(`Invalid MaxLoadPerPhase for worker ${worker.WorkerID}`);
+      if (isNaN(Number(worker.MaxLoadPerPhase)))
+        newErrors.push(`Invalid MaxLoadPerPhase for worker ${worker.WorkerID}`);
     }
 
-    // Tasks
     const taskIDs = new Set();
     for (const task of tasksData) {
       for (const key in task) {
@@ -120,7 +129,6 @@ export default function Home() {
 
     setErrors(newErrors);
 
-    // AI Fix Suggestions
     try {
       setLoadingFixes(true);
       const res = await fetch("/api/ai-fix-suggestions", {
@@ -140,14 +148,10 @@ export default function Home() {
   function parseArray(val: any): any[] {
     try {
       if (Array.isArray(val)) return val;
-      if (typeof val === "string") {
-        return JSON.parse(val);
-      }
+      if (typeof val === "string") return JSON.parse(val);
       return [];
     } catch {
-      if (typeof val === "string") {
-        return val.split(",").map((v) => v.trim());
-      }
+      if (typeof val === "string") return val.split(",").map((v) => v.trim());
       return [];
     }
   }
@@ -164,82 +168,137 @@ export default function Home() {
     if (!data.length) return null;
     const headers = Object.keys(data[0]);
     return (
-      <table className="table-auto border-collapse border w-full mb-4">
-        <thead>
-          <tr>
-            {headers.map((h) => (
-              <th key={h} className="border px-2 py-1 bg-gray-100">{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {filterData(data, searchQuery).map((row, rowIndex) => (
-            <tr key={rowIndex}>
+      <div className="overflow-x-auto bg-white shadow rounded-lg border border-gray-200 my-4">
+        <table className="table-auto min-w-full text-sm text-left">
+          <thead className="bg-gray-100 text-gray-600 font-medium">
+            <tr>
               {headers.map((h) => (
-                <td key={h} className="border px-2 py-1">
-                  <input
-                    value={row[h] || ""}
-                    onChange={(e) => {
-                      const newData = [...data];
-                      newData[rowIndex][h] = e.target.value;
-                      setData(newData);
-                    }}
-                    className="w-full border-none"
-                  />
-                </td>
+                <th key={h} className="px-4 py-2 border">{h}</th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="text-gray-700">
+            {filterData(data, searchQuery).map((row, rowIndex) => (
+              <tr key={rowIndex} className="even:bg-gray-50">
+                {headers.map((h) => (
+                  <td key={h} className="px-4 py-2 border">
+                    <input
+                      value={row[h] || ""}
+                      onChange={(e) => {
+                        const newData = [...data];
+                        newData[rowIndex][h] = e.target.value;
+                        setData(newData);
+                      }}
+                      className="w-full p-1 border rounded text-sm"
+                    />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-4">
-      <h1 className="text-2xl font-bold">📊 Data Alchemist</h1>
+    <div className="p-8 space-y-6 bg-gray-50 min-h-screen">
+      <h1 className="text-3xl font-bold text-blue-900">📊 Data Alchemist</h1>
 
-      <div className="space-y-3">
-        <div className="space-y-1">
-          <label className="block font-semibold">📤 Upload Your Files:</label>
-          <input type="file" onChange={(e) => handleEntityUpload(e, setClientsData)} />
-          <input type="file" onChange={(e) => handleEntityUpload(e, setWorkersData)} />
-          <input type="file" onChange={(e) => handleEntityUpload(e, setTasksData)} />
+      <div className="bg-white p-6 rounded-lg shadow space-y-4 border border-gray-200">
+        <div className="space-y-2">
+          <h2 className="font-semibold text-lg text-gray-800">📤 Upload Your Files</h2>
+
+          {/* Client File Upload */}
+          <div className="flex items-center space-x-3">
+            <label
+              htmlFor="client-upload"
+              className="cursor-pointer bg-black text-white px-4 py-2 rounded-md shadow"
+            >
+              {clientFileName ? "📂 Change Client File" : "📁 Choose Client File"}
+            </label>
+            <span className="text-sm text-gray-700">{clientFileName}</span>
+            <input
+              id="client-upload"
+              type="file"
+              className="hidden"
+              onChange={(e) => handleEntityUpload(e, setClientsData, setClientFileName)}
+            />
+          </div>
+
+          {/* Worker File Upload */}
+          <div className="flex items-center space-x-3">
+            <label
+              htmlFor="worker-upload"
+              className="cursor-pointer bg-black text-white px-4 py-2 rounded-md shadow"
+            >
+              {workerFileName ? "📂 Change Worker File" : "📁 Choose Worker File"}
+            </label>
+            <span className="text-sm text-gray-700">{workerFileName}</span>
+            <input
+              id="worker-upload"
+              type="file"
+              className="hidden"
+              onChange={(e) => handleEntityUpload(e, setWorkersData, setWorkerFileName)}
+            />
+          </div>
+
+          {/* Task File Upload */}
+          <div className="flex items-center space-x-3">
+            <label
+              htmlFor="task-upload"
+              className="cursor-pointer bg-black text-white px-4 py-2 rounded-md shadow"
+            >
+              {taskFileName ? "📂 Change Task File" : "📁 Choose Task File"}
+            </label>
+            <span className="text-sm text-gray-700">{taskFileName}</span>
+            <input
+              id="task-upload"
+              type="file"
+              className="hidden"
+              onChange={(e) => handleEntityUpload(e, setTasksData, setTaskFileName)}
+            />
+          </div>
         </div>
 
-        <div className="text-sm text-gray-600">
-          Or try with our prefilled sample files:
-        </div>
 
-        <ul className="list-disc list-inside text-blue-700 underline text-sm">
-          <li><a href="/samples/clients.csv" download>Download clients.csv</a></li>
-          <li><a href="/samples/workers.csv" download>Download workers.csv</a></li>
-          <li><a href="/samples/tasks.csv" download>Download tasks.csv</a></li>
-        </ul>
+        <div className="text-sm text-gray-500">
+          Or try with sample files:
+          <ul className="list-disc list-inside mt-2">
+            <li><a href="/samples/clients.csv" download className="text-blue-600 hover:underline">Download clients.csv</a></li>
+            <li><a href="/samples/workers.csv" download className="text-blue-600 hover:underline">Download workers.csv</a></li>
+            <li><a href="/samples/tasks.csv" download className="text-blue-600 hover:underline">Download tasks.csv</a></li>
+          </ul>
+        </div>
       </div>
 
-      <button onClick={validateAll} className="bg-red-500 text-white px-4 py-2 rounded">Validate</button>
+      <button
+        onClick={validateAll}
+        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded shadow"
+      >
+        ✅ Validate
+      </button>
 
       {errors.length > 0 && (
-        <div className="bg-red-100 border p-2">
+        <div className="bg-red-100 border border-red-400 text-red-800 p-4 rounded">
           <h3 className="font-bold">Validation Errors:</h3>
-          <ul>{errors.map((e, i) => (<li key={i}>{e}</li>))}</ul>
+          <ul className="list-disc list-inside">{errors.map((e, i) => (<li key={i}>{e}</li>))}</ul>
         </div>
       )}
 
       {aiFixes.length > 0 && (
-        <div className="bg-yellow-50 border border-yellow-300 p-2">
+        <div className="bg-yellow-100 border border-yellow-300 text-yellow-800 p-4 rounded">
           <h3 className="font-bold">AI Suggestions:</h3>
-          <ul>{aiFixes.map((f, i) => (<li key={i}>{f}</li>))}</ul>
+          <ul className="list-disc list-inside">{aiFixes.map((f, i) => (<li key={i}>{f}</li>))}</ul>
         </div>
       )}
 
       <input
         type="text"
-        placeholder="Search (e.g. priority 5 clients)"
+        placeholder="🔍 Search (e.g. priority 5 clients)"
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
-        className="border p-1 rounded w-full"
+        className="border p-2 rounded w-full shadow-sm"
       />
 
       {renderEditableTable(clientsData, setClientsData)}
