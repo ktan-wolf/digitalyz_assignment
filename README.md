@@ -4,7 +4,9 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 First, run the development server:
 
+```bash
 Add env file with you Grok api key
+```
 
 ```bash
 npm run dev
